@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>cytoscape-lasso</title>
+  <script src="https://unpkg.com/cytoscape@3.15.2/dist/cytoscape.min.js"></script>
+  <script src="https://unpkg.com/jquery@3.5.1/dist/jquery.js"></script>
+  <script src="https://unpkg.com/cytoscape-panzoom@2.5.3/cytoscape-panzoom.js"></script>
+  <link href="https://unpkg.com/cytoscape-panzoom@2.5.3/cytoscape.js-panzoom.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://unpkg.com/cytoscape-lasso@1.0.0/dist/cytoscape-lasso.js"></script>
+  <!-- <script src="../dist/cytoscape-lasso.js"></script> -->
+  <style>
+    body {
+      margin: 0;
+    }
+    #graph {
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div id="graph"></div>
+
+<script>
+// d3.schemeCategory10
+const colors = [
+  '#1f77b4',
+  '#ff7f0e',
+  '#2ca02c',
+  '#d62728',
+  '#9467bd',
+  '#8c564b',
+  '#e377c2',
+  '#7f7f7f',
+  '#bcbd22',
+  '#17becf'
+];
+
+window.addEventListener('DOMContentLoaded', async () => {
+  const container = document.getElementById('graph');
+
+  const { nodes, links } = await (await fetch('miserables.json')).json();
+  const elements = [
+    ...nodes.map(node => ({ group: 'nodes', data: node })),
+    ...links.map(link => ({ group: 'edges', data: { ...link, width: Math.log(link.value) + 1 } })),
+  ];
+
+  const cy = cytoscape({
+    container,
+    elements,
+    layout: {
+      name: 'cose',
+      animate: false,
+      nodeRepulsion: 1000000
+    },
+    style: [
+      {
+        selector: 'node',
+        style: {
+          'border-color': '#ffffff',
+          'border-width': 2,
+          'background-image': 'data:image/svg+xml;base64,' + btoa(`<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1536 1399q0 109-62.5 187t-150.5 78h-854q-88 0-150.5-78t-62.5-187q0-85 8.5-160.5t31.5-152 58.5-131 94-89 134.5-34.5q131 128 313 128t313-128q76 0 134.5 34.5t94 89 58.5 131 31.5 152 8.5 160.5zm-256-887q0 159-112.5 271.5t-271.5 112.5-271.5-112.5-112.5-271.5 112.5-271.5 271.5-112.5 271.5 112.5 112.5 271.5z" fill="#fff"/></svg>`),
+          'background-width': '60%',
+          'background-height': '60%',
+          'label': 'data(id)',
+          'color': '#333333',
+          'text-valign': 'bottom',
+          'text-margin-y': 6,
+          'text-background-color': '#ffffff',
+          'text-background-opacity': 0.5,
+          'text-background-padding': 4,
+        }
+      },
+      {
+        selector: 'node.hover',
+        style: {
+          'border-color': '#000000',
+          'text-background-color': '#eeeeee',
+          'text-background-opacity': 1
+        }
+      },
+      {
+        selector: 'node:selected',
+        style: {
+          'border-color': '#ff0000',
+          'border-width': 6,
+          'border-opacity': 0.5
+        }
+      },
+      {
+        selector: 'edge',
+        style: {
+          'width': 'data(width)',
+          'line-color': '#cccccc'
+        }
+      },
+      {
+        selector: 'edge.hover',
+        style: {
+          'line-color': '#999999'
+        }
+      },
+      ...colors.map((color, group) => ({
+        selector: `node[group=${group}]`,
+        style: {
+          'background-color': color
+        }
+      })),
+    ]
+  });
+  cy.panzoom();
+
+  cy.on('mouseover', '*', e => {
+    e.target.addClass('hover');
+    e.cy.container().style.cursor = 'pointer';
+  });
+  cy.on('mouseout', '*', e => {
+    e.target.removeClass('hover');
+    e.cy.container().style.cursor = 'default';
+  });
+
+  cy.on('mousedown', e => console.log('mousedown', e));
+  cy.on('mouseup', e => console.log('mouseup', e));
+  cy.on('click', e => console.log('click', e));
+  cy.on('select', e => console.log('select', e));
+  cy.on('unselect', e => console.log('unselect', e));
+  cy.on('boxstart', e => console.log('boxstart', e));
+  cy.on('boxend', e => console.log('boxend', e));
+  cy.on('boxselect', e => console.log('boxselect', e));
+  cy.on('box', e => console.log('box', e));
+
+  // cy.userPanningEnabled(false);
+  cy.lassoSelectionEnabled(true);
+});
+</script>
+</body>
+</html>

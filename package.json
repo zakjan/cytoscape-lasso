@@ -1,0 +1,43 @@
+{
+  "name": "cytoscape-lasso",
+  "version": "1.0.0",
+  "description": "Lasso selection plugin for Cytoscape.js",
+  "keywords": [
+    "cytoscape",
+    "lasso"
+  ],
+  "author": "Jan Zak <zj@zakjan.cz>",
+  "license": "MIT",
+  "repository": "github:zakjan/cytoscape-lasso",
+  "main": "src/index.js",
+  "browser": "dist/cytoscape-lasso.min.js",
+  "scripts": {
+    "build": "rimraf dist && rollup -c",
+    "dev": "rollup -c -w",
+    "test": "jest",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "point-in-polygon": "^1.0.1"
+  },
+  "peerDependencies": {
+    "cytoscape": "^3.15.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.10.5",
+    "@babel/plugin-proposal-class-properties": "^7.10.4",
+    "@babel/plugin-transform-runtime": "^7.10.5",
+    "@babel/preset-env": "^7.10.4",
+    "@babel/runtime": "^7.10.5",
+    "@rollup/plugin-babel": "^5.1.0",
+    "@rollup/plugin-commonjs": "^14.0.0",
+    "@rollup/plugin-node-resolve": "^8.4.0",
+    "cytoscape": "^3.15.2",
+    "jest": "^26.1.0",
+    "jest-simple-summary": "^1.0.2",
+    "rimraf": "^3.0.2",
+    "rollup": "^2.22.2",
+    "rollup-plugin-terser": "^6.1.0",
+    "rollup-plugin-visualizer": "^4.0.4"
+  }
+}
