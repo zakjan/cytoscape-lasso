@@ -19,8 +19,9 @@ export class LassoHandler {
   ctx;
   polygon;
 
-  originalBoxSelectionEnabled;
+  originalAutoungrabify;
   originalUserPanningEnabled;
+  originalBoxSelectionEnabled;
 
   onGraphMouseDownBound = this.onGraphMouseDown.bind(this);
   onDocumentMouseMoveBound = this.onDocumentMouseMove.bind(this);
@@ -56,10 +57,12 @@ export class LassoHandler {
     }
 
     // prevent original behavior
-    this.originalBoxSelectionEnabled = this.cy.boxSelectionEnabled();
+    this.originalAutoungrabify = this.cy.autoungrabify();
     this.originalUserPanningEnabled = this.cy.userPanningEnabled();
-    this.cy.boxSelectionEnabled(false);
+    this.originalBoxSelectionEnabled = this.cy.boxSelectionEnabled();
+    this.cy.autoungrabify(true);
     this.cy.userPanningEnabled(false);
+    this.cy.boxSelectionEnabled(false);
 
     // activate lasso selection
     document.addEventListener('mousemove', this.onDocumentMouseMoveBound);
@@ -72,6 +75,11 @@ export class LassoHandler {
 
     if (!this.polygon) {
       this.polygon = [];
+    }
+    this.polygon.push(clientPosition);
+    this.renderPolygon();
+
+    if (this.polygon.length === 1) {
       this.cy.emit({ type: 'boxstart', originalEvent: event, position: { x: graphPosition[0], y: graphPosition[1] } });
 
       // hide mousedown hint
@@ -79,36 +87,37 @@ export class LassoHandler {
       this.cy.renderer().redrawHint('select', true);
       this.cy.renderer().redraw();
     }
-
-    this.polygon.push(clientPosition);
-    this.renderPolygon();
   }
 
   onDocumentMouseUp(event) {
+    // deactivate lasso selection
+    document.removeEventListener('mousemove', this.onDocumentMouseMoveBound);
+    document.removeEventListener('mouseup', this.onDocumentMouseUpBound);
+
+    // restore original behavior
+    this.cy.autoungrabify(this.originalAutoungrabify);
+    this.cy.userPanningEnabled(this.originalUserPanningEnabled);
+    this.cy.boxSelectionEnabled(this.originalBoxSelectionEnabled);
+    this.originalAutoungrabify = undefined;
+    this.originalUserPanningEnabled = undefined;
+    this.originalBoxSelectionEnabled = undefined;
+
+    if (!this.polygon) {
+      return;
+    }
+
     const clientPosition = [event.clientX, event.clientY];
     const graphPosition = this.getGraphPosition(clientPosition);
 
     this.finish();
 
     this.polygon = undefined;
-    this.cy.emit({ type: 'boxend', originalEvent: event, position: { x: graphPosition[0], y: graphPosition[1] } });
     this.renderPolygon();
-
-    // deactivate lasso selection
-    document.removeEventListener('mousemove', this.onDocumentMouseMoveBound);
-    document.removeEventListener('mouseup', this.onDocumentMouseUpBound);
-
-    // restore original behavior
-    this.cy.boxSelectionEnabled(this.originalBoxSelectionEnabled);
-    this.cy.userPanningEnabled(this.originalUserPanningEnabled);
-    this.originalBoxSelectionEnabled = undefined;
-    this.originalUserPanningEnabled = undefined;
 
     // prevent unselecting in Cytoscape mouseup if user panning is disabled
     this.cy.renderer().hoverData.dragged = true;
-    setTimeout(() => {
-      this.cy.renderer().hoverData.dragged = false;
-    }, 0);
+
+    this.cy.emit({ type: 'boxend', originalEvent: event, position: { x: graphPosition[0], y: graphPosition[1] } });
   }
 
   /* private */ renderPolygon() {
