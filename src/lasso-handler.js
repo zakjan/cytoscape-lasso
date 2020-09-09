@@ -17,11 +17,13 @@ export class LassoHandler {
   cy;
   canvas;
   ctx;
-  polygon;
 
   originalAutoungrabify;
   originalUserPanningEnabled;
   originalBoxSelectionEnabled;
+
+  polygon;
+  activated = false;
 
   onGraphMouseDownBound = this.onGraphMouseDown.bind(this);
   onDocumentMouseMoveBound = this.onDocumentMouseMove.bind(this);
@@ -56,43 +58,56 @@ export class LassoHandler {
       return;
     }
 
-    // prevent original behavior
-    this.originalAutoungrabify = this.cy.autoungrabify();
-    this.originalUserPanningEnabled = this.cy.userPanningEnabled();
-    this.originalBoxSelectionEnabled = this.cy.boxSelectionEnabled();
-    this.cy.autoungrabify(true);
-    this.cy.userPanningEnabled(false);
-    this.cy.boxSelectionEnabled(false);
+    const clientPosition = [event.clientX, event.clientY];
+    this.polygon = [clientPosition];
 
-    // activate lasso selection
     document.addEventListener('mousemove', this.onDocumentMouseMoveBound);
-    document.addEventListener('mouseup', this.onDocumentMouseUpBound);
   }
 
   onDocumentMouseMove(event) {
-    const clientPosition = [event.clientX, event.clientY];
-    const graphPosition = this.getGraphPosition(clientPosition);
-
     if (!this.polygon) {
-      this.polygon = [];
+      return;
     }
+
+    const clientPosition = [event.clientX, event.clientY];
     this.polygon.push(clientPosition);
-    this.renderPolygon();
 
-    if (this.polygon.length === 1) {
-      this.cy.emit({ type: 'boxstart', originalEvent: event, position: { x: graphPosition[0], y: graphPosition[1] } });
+    const activated = this.activated;
+    this.activate();
 
-      // hide mousedown hint
+    this.render();
+
+    if (!activated && this.activated) {
+      // prevent original behavior
+      this.originalAutoungrabify = this.cy.autoungrabify();
+      this.originalUserPanningEnabled = this.cy.userPanningEnabled();
+      this.originalBoxSelectionEnabled = this.cy.boxSelectionEnabled();
+      this.cy.autoungrabify(true);
+      this.cy.userPanningEnabled(false);
+      this.cy.boxSelectionEnabled(false);
+
+      // prevent mousedown hint
       this.cy.renderer().data.bgActivePosistion = undefined;
       this.cy.renderer().redrawHint('select', true);
       this.cy.renderer().redraw();
+
+      const graphPosition = this.getGraphPosition(clientPosition);
+      this.cy.emit({ type: 'boxstart', originalEvent: event, position: { x: graphPosition[0], y: graphPosition[1] } });
     }
   }
 
   onDocumentMouseUp(event) {
-    // deactivate lasso selection
-    document.removeEventListener('mousemove', this.onDocumentMouseMoveBound);
-    document.removeEventListener('mouseup', this.onDocumentMouseUpBound);
+    if (!this.activated) {
+      return;
+    }
+
+    const clientPosition = [event.clientX, event.clientY];
+
+    this.finish();
+
+    this.polygon = undefined;
+
+    this.render();
 
     // restore original behavior
     this.cy.autoungrabify(this.originalAutoungrabify);
@@ -102,28 +117,67 @@ export class LassoHandler {
     this.originalUserPanningEnabled = undefined;
     this.originalBoxSelectionEnabled = undefined;
 
-    if (!this.polygon) {
-      return;
-    }
-
-    const clientPosition = [event.clientX, event.clientY];
-    const graphPosition = this.getGraphPosition(clientPosition);
-
-    this.finish();
-
-    this.polygon = undefined;
-    this.renderPolygon();
-
     // prevent unselecting in Cytoscape mouseup if user panning is disabled
     this.cy.renderer().hoverData.dragged = true;
 
+    const graphPosition = this.getGraphPosition(clientPosition);
     this.cy.emit({ type: 'boxend', originalEvent: event, position: { x: graphPosition[0], y: graphPosition[1] } });
   }
 
-  /* private */ renderPolygon() {
+  /* private */ activate() {
+    if (this.activated) {
+      return;
+    }
+
+    const firstPosition = this.polygon[0];
+    const lastPosition = this.polygon[this.polygon.length - 1];
+
+    const dx = lastPosition[0] - firstPosition[0];
+    const dx2 = dx * dx;
+    const dy = lastPosition[1] - firstPosition[1];
+    const dy2 = dy * dy;
+    const dist2 = dx2 + dy2;
+    const isOverThresholdDrag = dist2 >= this.cy.renderer().desktopTapThreshold2;
+
+    if (isOverThresholdDrag) {
+      this.activated = true;
+
+      document.addEventListener('mouseup', this.onDocumentMouseUpBound);
+    }
+  }
+
+  /* private */ finish() {
+    if (!this.activated) {
+      return;
+    }
+
+    const graphPolygon = this.getGraphPolygon(this.polygon);
+    const matchedNodes = this.cy.nodes().filter(node => {
+      const position = node.position();
+      const point = [position.x, position.y];
+      return pointInPolygon(point, graphPolygon);
+    });
+
+    if (!(isMultSelKeyDown(event) || this.cy.selectionType() === 'additive')) {
+      this.cy.$(isSelected).unmerge(matchedNodes).unselect();
+    }
+
+    matchedNodes
+      .emit('box')
+      .stdFilter(eleWouldBeSelected)
+        .select()
+        .emit('boxselect');
+
+    this.activated = false;
+
+    document.removeEventListener('mousemove', this.onDocumentMouseMoveBound);
+    document.removeEventListener('mouseup', this.onDocumentMouseUpBound);
+  }
+
+  /* private */ render() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    if (!this.polygon) {
+    if (!this.activated) {
       return;
     }
 
@@ -159,29 +213,6 @@ export class LassoHandler {
 
     // end scaled drawing
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-  }
-
-  /* private */ finish() {
-    if (!this.polygon) {
-      return;
-    }
-
-    const graphPolygon = this.getGraphPolygon(this.polygon);
-    const matchedNodes = this.cy.nodes().filter(node => {
-      const position = node.position();
-      const point = [position.x, position.y];
-      return pointInPolygon(point, graphPolygon);
-    });
-
-    if (!(isMultSelKeyDown(event) || this.cy.selectionType() === 'additive')) {
-      this.cy.$(isSelected).unmerge(matchedNodes).unselect();
-    }
-
-    matchedNodes
-      .emit('box')
-      .stdFilter(eleWouldBeSelected)
-        .select()
-        .emit('boxselect');
   }
 
   /* private */ getCanvasPosition(clientPosition) {
