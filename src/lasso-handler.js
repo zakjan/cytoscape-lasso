@@ -54,30 +54,26 @@ export class LassoHandler {
   }
 
   onGraphMouseDown(event) {
-    if (!(isMultSelKeyDown(event) || !this.cy.panningEnabled() || !this.cy.userPanningEnabled())) {
-      return;
-    }
-
     const clientPosition = [event.clientX, event.clientY];
     this.polygon = [clientPosition];
 
     document.addEventListener('mousemove', this.onDocumentMouseMoveBound);
+    document.addEventListener('mouseup', this.onDocumentMouseUpBound);
   }
 
   onDocumentMouseMove(event) {
-    if (!this.polygon) {
-      return;
-    }
-
     const clientPosition = [event.clientX, event.clientY];
     this.polygon.push(clientPosition);
 
     const activated = this.activated;
-    this.activate();
+    if (isMultSelKeyDown(event) || !this.cy.panningEnabled() || !this.cy.userPanningEnabled()) {
+      this.activate();
+    }
+    const activatedNow = !activated && this.activated;
 
     this.render();
 
-    if (!activated && this.activated) {
+    if (activatedNow) {
       // prevent original behavior
       this.originalAutoungrabify = this.cy.autoungrabify();
       this.originalUserPanningEnabled = this.cy.userPanningEnabled();
@@ -97,6 +93,9 @@ export class LassoHandler {
   }
 
   onDocumentMouseUp(event) {
+    document.removeEventListener('mousemove', this.onDocumentMouseMoveBound);
+    document.removeEventListener('mouseup', this.onDocumentMouseUpBound);
+
     if (!this.activated) {
       return;
     }
@@ -141,8 +140,6 @@ export class LassoHandler {
 
     if (isOverThresholdDrag) {
       this.activated = true;
-
-      document.addEventListener('mouseup', this.onDocumentMouseUpBound);
     }
   }
 
@@ -158,7 +155,7 @@ export class LassoHandler {
       return pointInPolygon(point, graphPolygon);
     });
 
-    if (!(isMultSelKeyDown(event) || this.cy.selectionType() === 'additive')) {
+    if (!isMultSelKeyDown(event) && this.cy.selectionType() !== 'additive') {
       this.cy.$(isSelected).unmerge(matchedNodes).unselect();
     }
 
@@ -169,9 +166,6 @@ export class LassoHandler {
         .emit('boxselect');
 
     this.activated = false;
-
-    document.removeEventListener('mousemove', this.onDocumentMouseMoveBound);
-    document.removeEventListener('mouseup', this.onDocumentMouseUpBound);
   }
 
   /* private */ render() {
