@@ -39,8 +39,6 @@ const colors = [
 ];
 
 window.addEventListener('DOMContentLoaded', async () => {
-  const container = document.getElementById('graph');
-
   const { nodes, links } = await (await fetch('miserables.json')).json();
   const elements = [
     ...nodes.map(node => ({ group: 'nodes', data: node })),
@@ -48,7 +46,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   ];
 
   const cy = cytoscape({
-    container,
+    container: document.getElementById('graph'),
     elements,
     layout: {
       name: 'cose',
