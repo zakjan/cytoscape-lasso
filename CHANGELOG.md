@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1
+
+- skip activation if graph is dragging
+
 ## 1.1.0
 
 - support `desktopTapThreshold` Cytoscape setting
