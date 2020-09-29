@@ -66,7 +66,7 @@ export class LassoHandler {
     this.polygon.push(clientPosition);
 
     const activated = this.activated;
-    if (isMultSelKeyDown(event) || !this.cy.panningEnabled() || !this.cy.userPanningEnabled()) {
+    if (!this.cy.renderer().hoverData.dragging && (isMultSelKeyDown(event) || !this.cy.panningEnabled() || !this.cy.userPanningEnabled())) {
       this.activate();
     }
     const activatedNow = !activated && this.activated;
