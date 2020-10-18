@@ -25,7 +25,8 @@ export class LassoHandler {
   polygon;
   activated = false;
 
-  onGraphMouseDownBound = this.onGraphMouseDown.bind(this);
+  onGraphResizeBound = this.onGraphResize.bind(this);
+  onGraphContainerMouseDownBound = this.onGraphContainerMouseDown.bind(this);
   onDocumentMouseMoveBound = this.onDocumentMouseMove.bind(this);
   onDocumentMouseUpBound = this.onDocumentMouseUp.bind(this);
 
@@ -35,17 +36,19 @@ export class LassoHandler {
     const originalCanvas = this.cy.container().querySelector('canvas[data-id="layer0-selectbox"]');
     this.canvas = document.createElement('canvas');
     this.canvas.setAttribute('data-id', 'layer0-lasso');
-    this.canvas.width = originalCanvas.width;
-    this.canvas.height = originalCanvas.height;
     this.canvas.setAttribute('style', originalCanvas.getAttribute('style'));
+    this.onGraphResize();
     originalCanvas.parentElement.insertBefore(this.canvas, originalCanvas);
+
     this.ctx = this.canvas.getContext('2d');
 
-    this.cy.container().addEventListener('mousedown', this.onGraphMouseDownBound);
+    this.cy.on('resize', this.onGraphResizeBound);
+    this.cy.container().addEventListener('mousedown', this.onGraphContainerMouseDownBound);
   }
 
   destroy() {
-    this.cy.container().removeEventListener('mousedown', this.onGraphMouseDownBound);
+    this.cy.off('resize', this.onGraphResizeBound);
+    this.cy.container().removeEventListener('mousedown', this.onGraphContainerMouseDownBound);
 
     this.cy = undefined;
     this.canvas.remove();
@@ -53,7 +56,14 @@ export class LassoHandler {
     this.ctx = undefined;
   }
 
-  onGraphMouseDown(event) {
+  onGraphResize() {
+    this.canvas.width = this.cy.width() * this.cy.renderer().getPixelRatio();
+    this.canvas.height = this.cy.height() * this.cy.renderer().getPixelRatio();
+    this.canvas.style.width = `${this.cy.width()}px`;
+    this.canvas.style.height = `${this.cy.height()}px`;
+  }
+
+  onGraphContainerMouseDown(event) {
     const clientPosition = [event.clientX, event.clientY];
     this.polygon = [clientPosition];
 
