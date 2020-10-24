@@ -28,6 +28,11 @@ Box selection [core events](https://js.cytoscape.org/#events/user-input-device-e
 - `select`
 - `unselect`
 
+Compatible with other Cytoscape plugins:
+
+- `cytoscape-edgehandles`
+- `cytoscape-mapbox-gl`
+
 ## Install
 
 ```
