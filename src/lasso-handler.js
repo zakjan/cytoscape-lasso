@@ -116,7 +116,7 @@ export class LassoHandler {
 
     const clientPosition = [event.clientX, event.clientY];
 
-    this.finish();
+    this.finish(event);
 
     this.polygon = undefined;
 
@@ -157,7 +157,7 @@ export class LassoHandler {
     }
   }
 
-  /* private */ finish() {
+  /* private */ finish(event) {
     if (!this.activated) {
       return;
     }
