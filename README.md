@@ -42,7 +42,7 @@ npm install cytoscape-lasso
 or
 
 ```
-<script src="https://unpkg.com/cytoscape-lasso@1.1.2/dist/cytoscape-lasso.min.js"></script>
+<script src="https://unpkg.com/cytoscape-lasso@1.1.3/dist/cytoscape-lasso.min.js"></script>
 ```
 
 ## Usage

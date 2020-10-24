@@ -1,6 +1,6 @@
 {
   "name": "cytoscape-lasso",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "Lasso selection plugin for Cytoscape",
   "keywords": [
     "cytoscape",
