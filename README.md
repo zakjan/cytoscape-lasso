@@ -30,8 +30,8 @@ Box selection [core events](https://js.cytoscape.org/#events/user-input-device-e
 
 Compatible with other Cytoscape plugins:
 
-- `cytoscape-edgehandles`
-- `cytoscape-mapbox-gl`
+- [cytoscape-edgehandles](https://github.com/cytoscape/cytoscape.js-edgehandles)
+- [cytoscape-mapbox-gl](https://github.com/zakjan/cytoscape-mapbox-gl)
 
 ## Install
 
