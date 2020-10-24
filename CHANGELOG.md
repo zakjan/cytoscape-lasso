@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.3
+
+- add cytoscape-edgehandles compatibility
+
 ## 1.1.2
 
 - resize canvas on graph resize
