@@ -8,6 +8,8 @@
   <script src="https://unpkg.com/cytoscape-panzoom@2.5.3/cytoscape-panzoom.js"></script>
   <link href="https://unpkg.com/cytoscape-panzoom@2.5.3/cytoscape.js-panzoom.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.10/lodash.js"></script>
+  <script src="https://unpkg.com/cytoscape-edgehandles@3.6.0/cytoscape-edgehandles.js"></script>
   <script src="https://unpkg.com/cytoscape-lasso@1.1.2/dist/cytoscape-lasso.js"></script>
   <!-- <script src="../dist/cytoscape-lasso.js"></script> -->
   <style>
@@ -106,9 +108,63 @@ window.addEventListener('DOMContentLoaded', async () => {
           'background-color': color
         }
       })),
+      // edgehandles
+      {
+        selector: '.eh-handle',
+        style: {
+          'background-color': 'red',
+          'background-image': null,
+          'width': 12,
+          'height': 12,
+          'shape': 'ellipse',
+          'overlay-opacity': 0,
+          'border-width': 12,
+          'border-opacity': 0,
+          'label': ''
+        }
+      },
+      {
+        selector: '.eh-hover',
+        style: {
+          'background-color': 'red'
+        }
+      },
+      {
+        selector: '.eh-source',
+        style: {
+          'border-width': 2,
+          'border-color': 'red'
+        }
+      },
+      {
+        selector: '.eh-target',
+        style: {
+          'border-width': 2,
+          'border-color': 'red'
+        }
+      },
+      {
+        selector: '.eh-preview, .eh-ghost-edge',
+        style: {
+          'background-color': 'red',
+          'line-color': 'red',
+          'target-arrow-color': 'red',
+          'source-arrow-color': 'red',
+        }
+      },
+      {
+        selector: '.eh-ghost-edge.eh-preview-active',
+        style: {
+          'opacity': 0
+        }
+      }
     ]
   });
   cy.panzoom();
+  cy.edgehandles({
+    edgeParams: () => ({ data: { width: 1 }}),
+    ghostEdgeParams: () => ({ data: { width: 1 }})
+  });
 
   cy.on('mouseover', '*', e => {
     e.target.addClass('hover');
