@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.4
+
+- increase lasso priority with modifier, override node dragging
+
 ## 1.1.3
 
 - add cytoscape-edgehandles compatibility
