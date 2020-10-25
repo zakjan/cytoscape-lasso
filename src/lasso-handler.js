@@ -77,8 +77,16 @@ export class LassoHandler {
 
     const activated = this.activated;
     if (
-      !this.cy.renderer().hoverData.dragging &&
-      (isMultSelKeyDown(event) || !this.cy.panningEnabled() || !this.cy.userPanningEnabled()) &&
+      event.buttons === 1 &&
+      (
+        (
+          (this.cy.renderer().hoverData.down == null || this.cy.renderer().hoverData.down.pannable()) &&
+          !this.cy.renderer().hoverData.dragging && (isMultSelKeyDown(event) || !this.cy.panningEnabled() || !this.cy.userPanningEnabled())
+        ) || (
+          this.cy.renderer().hoverData.down &&
+          isMultSelKeyDown(event)
+        )
+      ) &&
       this.cy.$('.eh-source').length === 0 // cytoscape-edgehandles compatibility
     ) {
       this.activate();
