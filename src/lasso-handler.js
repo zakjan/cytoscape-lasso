@@ -1,28 +1,33 @@
 import pointInPolygon from 'point-in-polygon';
 
-// see https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/renderer/base/load-listeners.js
-function isMultSelKeyDown(e) {
-  return e.shiftKey || e.metaKey || e.ctrlKey; // maybe e.altKey
-}
+/** @typedef {import('cytoscape')} cytoscape */
 
-function isSelected(ele) {
-  return ele.selected();
-}
-
-function eleWouldBeSelected(ele) {
-  return ele.selectable() && !ele.selected();
+/**
+ * @param {MouseEvent} event
+ * @see https://github.com/cytoscape/cytoscape.js/blob/master/src/extensions/renderer/base/load-listeners.js
+ */
+function isMultSelKeyDown(event) {
+  return event.shiftKey || event.metaKey || event.ctrlKey; // maybe event.altKey
 }
 
 export class LassoHandler {
+  /** @type cytoscape.Core */
   cy;
+  /** @type HTMLCanvasElement */
   canvas;
+  /** @type CanvasRenderingContext2D */
   ctx;
 
+  /** @type boolean | undefined */
   originalAutoungrabify;
+  /** @type boolean | undefined */
   originalUserPanningEnabled;
+  /** @type boolean | undefined */
   originalBoxSelectionEnabled;
 
+  /** @type [number, number][] */
   polygon;
+  /** @type boolean */
   activated = false;
 
   onGraphResizeBound = this.onGraphResize.bind(this);
@@ -30,10 +35,14 @@ export class LassoHandler {
   onDocumentMouseMoveBound = this.onDocumentMouseMove.bind(this);
   onDocumentMouseUpBound = this.onDocumentMouseUp.bind(this);
 
+  /**
+   * @param {cytoscape.Core} cy
+   */
   constructor(cy) {
     this.cy = cy;
 
-    const originalCanvas = this.cy.container().querySelector('canvas[data-id="layer0-selectbox"]');
+    const graphContainer = /** @type HTMLElement */ (this.cy.container());
+    const originalCanvas = graphContainer.querySelector('canvas[data-id="layer0-selectbox"]');
     this.canvas = document.createElement('canvas');
     this.canvas.setAttribute('data-id', 'layer0-lasso');
     this.canvas.setAttribute('style', originalCanvas.getAttribute('style'));
@@ -43,12 +52,13 @@ export class LassoHandler {
     this.ctx = this.canvas.getContext('2d');
 
     this.cy.on('resize', this.onGraphResizeBound);
-    this.cy.container().addEventListener('mousedown', this.onGraphContainerMouseDownBound);
+    graphContainer.addEventListener('mousedown', this.onGraphContainerMouseDownBound);
   }
 
   destroy() {
+    const graphContainer = /** @type HTMLElement */ (this.cy.container());
     this.cy.off('resize', this.onGraphResizeBound);
-    this.cy.container().removeEventListener('mousedown', this.onGraphContainerMouseDownBound);
+    graphContainer.removeEventListener('mousedown', this.onGraphContainerMouseDownBound);
 
     this.cy = undefined;
     this.canvas.remove();
@@ -63,16 +73,22 @@ export class LassoHandler {
     this.canvas.style.height = `${this.cy.height()}px`;
   }
 
+  /**
+   * @param {MouseEvent} event
+   */
   onGraphContainerMouseDown(event) {
-    const clientPosition = [event.clientX, event.clientY];
+    const clientPosition = /** @type [number, number] */ ([event.clientX, event.clientY]);
     this.polygon = [clientPosition];
 
     document.addEventListener('mousemove', this.onDocumentMouseMoveBound);
     document.addEventListener('mouseup', this.onDocumentMouseUpBound);
   }
 
+  /**
+   * @param {MouseEvent} event
+   */
   onDocumentMouseMove(event) {
-    const clientPosition = [event.clientX, event.clientY];
+    const clientPosition = /** @type [number, number] */ ([event.clientX, event.clientY]);
     this.polygon.push(clientPosition);
 
     const activated = this.activated;
@@ -114,6 +130,9 @@ export class LassoHandler {
     }
   }
 
+  /**
+   * @param {MouseEvent} event
+   */
   onDocumentMouseUp(event) {
     document.removeEventListener('mousemove', this.onDocumentMouseMoveBound);
     document.removeEventListener('mouseup', this.onDocumentMouseUpBound);
@@ -122,7 +141,7 @@ export class LassoHandler {
       return;
     }
 
-    const clientPosition = [event.clientX, event.clientY];
+    const clientPosition = /** @type [number, number] */ ([event.clientX, event.clientY]);
 
     this.finish(event);
 
@@ -145,7 +164,10 @@ export class LassoHandler {
     this.cy.emit({ type: 'boxend', originalEvent: event, position: { x: graphPosition[0], y: graphPosition[1] } });
   }
 
-  /* private */ activate() {
+  /**
+   * @private
+   */
+  activate() {
     if (this.activated) {
       return;
     }
@@ -165,7 +187,11 @@ export class LassoHandler {
     }
   }
 
-  /* private */ finish(event) {
+  /**
+   * @private
+   * @param {MouseEvent} event
+   */
+  finish(event) {
     if (!this.activated) {
       return;
     }
@@ -178,19 +204,22 @@ export class LassoHandler {
     });
 
     if (!isMultSelKeyDown(event) && this.cy.selectionType() !== 'additive') {
-      this.cy.$(isSelected).unmerge(matchedNodes).unselect();
+      this.cy.$(':selected').unmerge(matchedNodes).unselect();
     }
 
     matchedNodes
       .emit('box')
-      .stdFilter(eleWouldBeSelected)
+      .filter(':selectable:unselected')
         .select()
         .emit('boxselect');
 
     this.activated = false;
   }
 
-  /* private */ render() {
+  /**
+   * @private
+   */
+  render() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     if (!this.activated) {
@@ -231,23 +260,43 @@ export class LassoHandler {
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
 
-  /* private */ getCanvasPosition(clientPosition) {
+  /**
+   * @private
+   * @param {[number, number]} clientPosition
+   * @return {[number, number]}
+   */
+  getCanvasPosition(clientPosition) {
     const offset = this.cy.renderer().findContainerClientCoords();
-    const canvasPosition = [clientPosition[0] - offset[0], clientPosition[1] - offset[1]];
+    const canvasPosition = /** @type [number, number] */ ([clientPosition[0] - offset[0], clientPosition[1] - offset[1]]);
     return canvasPosition;
   }
 
-  /* private */ getGraphPosition(clientPosition) {
+  /**
+   * @private
+   * @param {[number, number]} clientPosition
+   * @return {[number, number]}
+   */
+  getGraphPosition(clientPosition) {
     const graphPosition = this.cy.renderer().projectIntoViewport(clientPosition[0], clientPosition[1]);
     return graphPosition;
   }
 
-  /* private */ getCanvasPolygon(clientPolygon) {
+  /**
+   * @private
+   * @param {[number, number][]} clientPolygon
+   * @return {[number, number][]}
+   */
+  getCanvasPolygon(clientPolygon) {
     const canvasPolygon = clientPolygon.map(clientPosition => this.getCanvasPosition(clientPosition));
     return canvasPolygon;
   }
 
-  /* private */ getGraphPolygon(clientPolygon) {
+  /**
+   * @private
+   * @param {[number, number][]} clientPolygon
+   * @return {[number, number][]}
+   */
+  getGraphPolygon(clientPolygon) {
     const graphPolygon = clientPolygon.map(clientPosition => this.getGraphPosition(clientPosition));
     return graphPolygon;
   }
