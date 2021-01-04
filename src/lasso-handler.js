@@ -239,7 +239,7 @@ export class LassoHandler {
     // draw path
     const canvasPolygon = this.getCanvasPolygon(this.polygon);
     this.ctx.beginPath();
-    this.ctx.moveTo(canvasPolygon[0], canvasPolygon[1]);
+    this.ctx.moveTo(canvasPolygon[0][0], canvasPolygon[0][1]);
     for (let position of canvasPolygon) {
       this.ctx.lineTo(position[0], position[1]);
     }
